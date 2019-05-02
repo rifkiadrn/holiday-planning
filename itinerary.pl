@@ -34,9 +34,23 @@ edge(e, f, 2).
 */
 visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(Destination, OpeningTime, ClosingTime, TimeSpent, _),
  UpdatedWithJourneyTime is CurrentTime + Weight, UpdatedWithJourneyTime >= OpeningTime, UpdatedWithJourneyTime =< ClosingTime,
- write(CurrentTime), write(' - '),  write(UpdatedWithJourneyTime), write(': Journey to Vacation Spot '), write(Destination), nl,
- UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, write(UpdatedWithJourneyTime), write(' - '), write(UpdatedWithVisitTime), 
+ UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, UpdatedWithVisitTime =< 18,
+ ampm(CurrentTime, ConvertedCurrentTime, MeridiemStatus), ampm(UpdatedWithJourneyTime, ConvertedUpdatedWithJourneyTime, MeridiemStatus2),
+ write(ConvertedCurrentTime), write(MeridiemStatus), write(' - '),  write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),
+ write(': Journey to Vacation Spot '), write(Destination), nl, ampm(UpdatedWithVisitTime, ConvertedUpdatedWithVisitTime, MeridiemStatus3),
+ write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),write(' - '), write(ConvertedUpdatedWithVisitTime), write(MeridiemStatus3),
  write(': Vacation Spot '), write(Destination), nl.
+
+/**
+* AM PM checker
+*/
+ampm(Hour, NewHour, MeridiemStatus):- Hour >= 12, MeridiemStatus = 'PM', convertHour(Hour, NewHour).
+ampm(Hour, NewHour, MeridiemStatus):- Hour < 12, MeridiemStatus = 'AM', convertHour(Hour, NewHour).
+
+convertHour(12, 12).
+convertHour(Hour, NewHour):- Hour > 12, NewHour is Hour - 12, !.
+convertHour(Hour, NewHour):- NewHour = Hour.
+
 
 /**
 * update total visit in db
