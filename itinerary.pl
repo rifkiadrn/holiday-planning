@@ -63,7 +63,9 @@ incrementTotalVisit:- totalVisit(X), !, NewX is X + 1, retract(totalVisit(_)), a
 */
 path(X, Y, Category, [Z|Ys], CurrentTime):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category),
  visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), incrementTotalVisit, path(Z, Y, Category, Ys, UpdatedTime).
-path(X, X, Category, [], _):- spot(X, _, _, _, Category).
+path(X, X, Category, [], _):- spot(X, _, _, _, Category), printTotal.
 
+
+printTotal:- write('Total: '), totalVisit(Total), write(Total).
 %starting the program with predicate go/0
-go :- read(Category), retractall(totalVisit(_)), path(home, _, Category, SPOT, 8), write(SPOT), nl, write('Total: '), totalVisit(Total), write(Total).
+go :- read(Category), string_lower(Category, CategoryToLower), retractall(totalVisit(_)), path(home, _, CategoryToLower, SPOT, 8), write(SPOT).
