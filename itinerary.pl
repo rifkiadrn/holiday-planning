@@ -5,13 +5,13 @@
 */
 
 :- dynamic totalVisit/1.
-:- dynamic currentSolution/1.
+:- dynamic currentSolution/2.
 
 spot(a, 6, 10, 1, culinary).
 spot(b, 8, 11, 1, culinary).
-spot(c, 10, 14, 1, culinary).
+spot(c, 10, 14, 1, historical).
 spot(d, 12, 16, 3, culinary).
-spot(e, 13, 18, 2, culinary).
+spot(e, 13, 18, 2, historical).
 spot(f, 14, 18, 1, culinary).
 
 /** edge/3 is the predicate to simulate the weighted graph
@@ -73,10 +73,14 @@ visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(
  UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, UpdatedWithVisitTime =< 18.
 
 
-path(X, Y, Category, [Z|Ys], CurrentTime, Vertices):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category), \+ member(Z,Vertices), 
- visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), path(Z, Y, Category, Ys, UpdatedTime, [Z|Vertices]).
-path(X, X, Category, [], SPOT, _, Vertices):- spot(X, _, _, _, Category), print(SPOT), printTotal.
+path(X, Y, Categories, [Z|Ys], CurrentTime, Vertices, Length):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category), member(Category, Categories),\+ member(Z,Vertices), 
+ visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), path(Z, Y, Categories, Ys, UpdatedTime, [Z|Vertices], Length).
+path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), write(Vertices), printTotal(Vertices, Length), assert(currentSolution(Length, Vertices)).
 
-printTotal:- write('Total: '), totalVisit(Total), write(Total).
+printTotal(Vertices, Length):- write('Total: '), list_length(Vertices, Length), write(Length).
+
+list_length([], 0).
+list_length([H|T], Length):-  list_length(T, Length2), Length is 1 + Length2.
+
 %starting the program with predicate go/0
-go :- read(Category), string_lower(Category, CategoryToLower), retractall(totalVisit(_)), path(home, _, CategoryToLower, SPOT, 8), write(SPOT).
+go :- write('Input: '), nl, write('Category:'), read(Category), string_lower(Category, CategoryToLower), atomic_list_concat(Categories,',', CategoryToLower), retractall(totalVisit(_)), findall([Length,SPOT],path(home, _, Categories, SPOT, 8, [], Length), L), write(L).
