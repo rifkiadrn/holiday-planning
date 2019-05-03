@@ -50,7 +50,7 @@ visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(
 */
 path(X, Y, Categories, [Z|Ys], CurrentTime, Vertices, Length):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category), member(Category, Categories),\+ member(Z,Vertices), 
  visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), path(Z, Y, Categories, Ys, UpdatedTime, [Z|Vertices], Length).
-path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), list_length(Vertices, Length), write(Vertices), reverse(Vertices, Res), insertToSolution(Length, Res).
+path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), list_length(Vertices, Length), reverse(Vertices, Res), insertToSolution(Length, Res).
 
 
 /**
@@ -64,10 +64,6 @@ printPath([Source, Destination|Vertices], Length, CurrentTime):- edge(Source, De
  write(': Vacation Spot '), write(Destination), nl, !, printPath([Destination|Vertices], Length, UpdatedWithVisitTime).
 printPath([_|[]], Length, _):- write('Total: '), write(Length),nl,nl.
 
-printPathHelper([], _).
-printPathHelper([H|T], CurrentTime):- tupleBreaker(H, Length, Vertices), printPath([home|Vertices], Length, CurrentTime), printPathHelper(T, CurrentTime).
-
-tupleBreaker([Length,Vertices|_], Length, Vertices).
 
 printDB:- \+ currentSolution(_,_).
 printDB:- currentSolution(Length,Vertices), printPath([home|Vertices], Length, 8), retract(currentSolution(Length,Vertices)),printDB.
@@ -78,7 +74,7 @@ printDB:- currentSolution(Length,Vertices), printPath([home|Vertices], Length, 8
 append_dl(A-B, B-C, A-C).
 
 append_dl_helper([],B,Res):- append_dl(L-L, [B|T]-T, Res-[]).
-append_dl_helper(Vertices, B, Res):- append_dl(Vertices|B] - B, [B|T]-T, Res-[]).
+append_dl_helper(Vertices, B, Res):- append_dl([Vertices|B] - B, [B|T]-T, Res-[]).
 
 /**
 * insert current best solution to DB
