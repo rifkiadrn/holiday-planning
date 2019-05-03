@@ -10,7 +10,7 @@ spot(a, 8, 16, 1, culinary).
 spot(b, 8, 16, 1, culinary).
 spot(c, 8, 16, 1, historical).
 spot(d, 8, 16, 1, culinary).
-spot(e, 13, 18, 2, historical).
+spot(e, 8, 18, 2, historical).
 spot(f, 14, 18, 1, culinary).
 
 /** edge/3 is the predicate to simulate the weighted graph
@@ -22,6 +22,7 @@ edge(home, a, 1).
 edge(home, c, 1).
 edge(a, b, 1).
 edge(c, d, 1).
+edge(d, e, 1).
 
 
 
@@ -49,7 +50,7 @@ visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(
 */
 path(X, Y, Categories, [Z|Ys], CurrentTime, Vertices, Length):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category), member(Category, Categories),\+ member(Z,Vertices), 
  visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), path(Z, Y, Categories, Ys, UpdatedTime, [Z|Vertices], Length).
-path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), list_length(Vertices, Length), insertToSolution(Length, Vertices).
+path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), list_length(Vertices, Length), write(Vertices), reverse(Vertices, Res), insertToSolution(Length, Res).
 
 
 /**
@@ -68,12 +69,32 @@ printPathHelper([H|T], CurrentTime):- tupleBreaker(H, Length, Vertices), printPa
 
 tupleBreaker([Length,Vertices|_], Length, Vertices).
 
-insertToSolution(Length, Vertices):- currentSolution(CurrentHighest, _), CurrentHighest =< Length, assert(currentSolution(Length, Vertices)).
+printDB:- \+ currentSolution(_,_).
+printDB:- currentSolution(Length,Vertices), printPath([home|Vertices], Length, 8), retract(currentSolution(Length,Vertices)),printDB.
+
+/**
+* append  with difference list
+*/
+append_dl(A-B, B-C, A-C).
+
+append_dl_helper([],B,Res):- append_dl(L-L, [B|T]-T, Res-[]).
+append_dl_helper(Vertices, B, Res):- append_dl(Vertices|B] - B, [B|T]-T, Res-[]).
+
+/**
+* insert current best solution to DB
+*/
+insertToSolution(Length, Vertices):- currentSolution(CurrentHighest, _), CurrentHighest = Length, assert(currentSolution(Length, Vertices)).
+insertToSolution(Length, Vertices):- currentSolution(CurrentHighest, _), CurrentHighest < Length, retractall(currentSolution(_,_)), assert(currentSolution(Length, Vertices)).
 insertToSolution(Length, Vertices):- \+ currentSolution(_, _), assert(currentSolution(Length, Vertices)).
 
+/**
+* Get length of list
+*/
 list_length([], 0).
 list_length([_|T], Length):-  list_length(T, Length2), Length is 1 + Length2.
 
-%starting the program with predicate go/0
+/**
+* starting the program with predicate go/0
+*/
 go :- retractall(currentSolution(_,_)), write('Input: '), nl, write('Category:'), read(Category), string_lower(Category, CategoryToLower),
- atomic_list_concat(Categories,',', CategoryToLower), findall([Length,SPOT], path(home, _, Categories, SPOT, 8, [], Length), ListOfSolutions), printPathHelper(ListOfSolutions, 8).
+ atomic_list_concat(Categories,',', CategoryToLower), findall([Length,SPOT], path(home, _, Categories, SPOT, 8, [], Length), _), printDB.
