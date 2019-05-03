@@ -10,7 +10,7 @@ spot(a, 6, 10, 1, culinary).
 spot(b, 8, 11, 1, culinary).
 spot(c, 10, 14, 1, culinary).
 spot(d, 12, 16, 3, culinary).
-spot(e, 13, 18, 2, culinary).
+spot(e, 13, 18, 2, historical).
 spot(f, 14, 18, 1, culinary).
 
 /** edge/3 is the predicate to simulate the weighted graph
