@@ -5,6 +5,7 @@
 */
 
 :- dynamic totalVisit/1.
+:- dynamic currentSolution/1.
 
 spot(a, 6, 10, 1, culinary).
 spot(b, 8, 11, 1, culinary).
@@ -31,7 +32,6 @@ edge(e, f, 2).
 
 /**
 * print visited spot
-*/
 visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(Destination, OpeningTime, ClosingTime, TimeSpent, _),
  UpdatedWithJourneyTime is CurrentTime + Weight, UpdatedWithJourneyTime >= OpeningTime, UpdatedWithJourneyTime =< ClosingTime,
  UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, UpdatedWithVisitTime =< 18,
@@ -40,6 +40,7 @@ visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(
  write(': Journey to Vacation Spot '), write(Destination), nl, ampm(UpdatedWithVisitTime, ConvertedUpdatedWithVisitTime, MeridiemStatus3),
  write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),write(' - '), write(ConvertedUpdatedWithVisitTime), write(MeridiemStatus3),
  write(': Vacation Spot '), write(Destination), nl.
+*/
 
 /**
 * AM PM checker
@@ -54,17 +55,27 @@ convertHour(Hour, NewHour):- NewHour = Hour.
 
 /**
 * update total visit in db
-*/
+*
 incrementTotalVisit:- \+ totalVisit(_), !, assert(totalVisit(1)).
 incrementTotalVisit:- totalVisit(X), !, NewX is X + 1, retract(totalVisit(_)), assert(totalVisit(NewX)).
-
+*/
 /**
 * traverse the graph
 */
-path(X, Y, Category, [Z|Ys], CurrentTime):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category),
- visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), incrementTotalVisit, path(Z, Y, Category, Ys, UpdatedTime).
-path(X, X, Category, [], _):- spot(X, _, _, _, Category), printTotal.
+/**path(X, Y, Category, [Z|Ys], CurrentTime, Vertices):- \+member(Z,Vertices), edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category),
+* visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), incrementTotalVisit, path(Z, Y, Category, Ys, UpdatedTime).
+*path(X, X, Category, [], _):- spot(X, _, _, _, Category), printTotal.
+*/
 
+
+visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(Destination, OpeningTime, ClosingTime, TimeSpent, _),
+ UpdatedWithJourneyTime is CurrentTime + Weight, UpdatedWithJourneyTime >= OpeningTime, UpdatedWithJourneyTime =< ClosingTime,
+ UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, UpdatedWithVisitTime =< 18.
+
+
+path(X, Y, Category, [Z|Ys], CurrentTime, Vertices):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category), \+ member(Z,Vertices), 
+ visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), path(Z, Y, Category, Ys, UpdatedTime, [Z|Vertices]).
+path(X, X, Category, [], SPOT, _, Vertices):- spot(X, _, _, _, Category), print(SPOT), printTotal.
 
 printTotal:- write('Total: '), totalVisit(Total), write(Total).
 %starting the program with predicate go/0
