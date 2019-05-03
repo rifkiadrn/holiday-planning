@@ -4,7 +4,6 @@
 * and the fifth param is the category
 */
 
-:- dynamic totalVisit/1.
 :- dynamic currentSolution/2.
 
 spot(a, 6, 10, 1, culinary).
@@ -75,12 +74,24 @@ visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(
 
 path(X, Y, Categories, [Z|Ys], CurrentTime, Vertices, Length):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category), member(Category, Categories),\+ member(Z,Vertices), 
  visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), path(Z, Y, Categories, Ys, UpdatedTime, [Z|Vertices], Length).
-path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), write(Vertices), printTotal(Vertices, Length), assert(currentSolution(Length, Vertices)).
+path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), list_length(Vertices, Length), insertToSolution(Length, Vertices).
 
-printTotal(Vertices, Length):- write('Total: '), list_length(Vertices, Length), write(Length).
+printPath([Source, Destination|Vertices], Length, CurrentTime):- edge(Source, Destination, Weight), spot(Destination, OpeningTime, ClosingTime, TimeSpent, _), UpdatedWithJourneyTime is CurrentTime + Weight,
+ ampm(CurrentTime, ConvertedCurrentTime, MeridiemStatus), ampm(UpdatedWithJourneyTime, ConvertedUpdatedWithJourneyTime, MeridiemStatus2),
+ UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, write(ConvertedCurrentTime), write(MeridiemStatus), write(' - '),  write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),
+ write(': Journey to Vacation Spot '), write(Destination), nl, ampm(UpdatedWithVisitTime, ConvertedUpdatedWithVisitTime, MeridiemStatus3),
+ write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),write(' - '), write(ConvertedUpdatedWithVisitTime), write(MeridiemStatus3),
+ write(': Vacation Spot '), write(Destination), nl, !, printPath([Destination|Vertices], Length, UpdatedWithVisitTime).
+printPath([Destination|[]], Length, CurrentTime):- write('Total: '), write(Length).
+
+printPathHelper([H,T|_]):- printPath([home|T], H, 8).
+
+insertToSolution(Length, Vertices):- currentSolution(CurrentHighest, CurrentHighestVertices), CurrentHighest =< Length, assert(currentSolution(Length, Vertices)).
+insertToSolution(Length, Vertices):- \+ currentSolution(_, _), assert(currentSolution(Length, Vertices)).
 
 list_length([], 0).
 list_length([H|T], Length):-  list_length(T, Length2), Length is 1 + Length2.
 
 %starting the program with predicate go/0
-go :- write('Input: '), nl, write('Category:'), read(Category), string_lower(Category, CategoryToLower), atomic_list_concat(Categories,',', CategoryToLower), retractall(totalVisit(_)), findall([Length,SPOT],path(home, _, Categories, SPOT, 8, [], Length), L), write(L).
+go :- retractall(currentSolution(_,_)), write('Input: '), nl, write('Category:'), read(Category), string_lower(Category, CategoryToLower),
+ atomic_list_concat(Categories,',', CategoryToLower), findall([Length,SPOT], path(home, _, Categories, SPOT, 8, [], Length), [H|T]), currentSolution(Length, Vertices), write(H), nl, printPathHelper(H).
