@@ -6,10 +6,10 @@
 
 :- dynamic currentSolution/2.
 
-spot(a, 6, 10, 1, culinary).
-spot(b, 8, 11, 1, culinary).
-spot(c, 10, 14, 1, historical).
-spot(d, 12, 16, 3, culinary).
+spot(a, 8, 16, 1, culinary).
+spot(b, 8, 16, 1, culinary).
+spot(c, 8, 16, 1, historical).
+spot(d, 8, 16, 1, culinary).
 spot(e, 13, 18, 2, historical).
 spot(f, 14, 18, 1, culinary).
 
@@ -19,27 +19,11 @@ spot(f, 14, 18, 1, culinary).
 */
 
 edge(home, a, 1).
-edge(home, c, 3).
-edge(home, e, 5).
+edge(home, c, 1).
 edge(a, b, 1).
-edge(b, c, 2).
 edge(c, d, 1).
-edge(b, d, 1).
-edge(c, e, 1).
-edge(e, f, 2).
 
 
-/**
-* print visited spot
-visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(Destination, OpeningTime, ClosingTime, TimeSpent, _),
- UpdatedWithJourneyTime is CurrentTime + Weight, UpdatedWithJourneyTime >= OpeningTime, UpdatedWithJourneyTime =< ClosingTime,
- UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, UpdatedWithVisitTime =< 18,
- ampm(CurrentTime, ConvertedCurrentTime, MeridiemStatus), ampm(UpdatedWithJourneyTime, ConvertedUpdatedWithJourneyTime, MeridiemStatus2),
- write(ConvertedCurrentTime), write(MeridiemStatus), write(' - '),  write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),
- write(': Journey to Vacation Spot '), write(Destination), nl, ampm(UpdatedWithVisitTime, ConvertedUpdatedWithVisitTime, MeridiemStatus3),
- write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),write(' - '), write(ConvertedUpdatedWithVisitTime), write(MeridiemStatus3),
- write(': Vacation Spot '), write(Destination), nl.
-*/
 
 /**
 * AM PM checker
@@ -53,45 +37,42 @@ convertHour(Hour, NewHour):- NewHour = Hour.
 
 
 /**
-* update total visit in db
-*
-incrementTotalVisit:- \+ totalVisit(_), !, assert(totalVisit(1)).
-incrementTotalVisit:- totalVisit(X), !, NewX is X + 1, retract(totalVisit(_)), assert(totalVisit(NewX)).
+* check if visit is feasible
 */
-/**
-* traverse the graph
-*/
-/**path(X, Y, Category, [Z|Ys], CurrentTime, Vertices):- \+member(Z,Vertices), edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category),
-* visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), incrementTotalVisit, path(Z, Y, Category, Ys, UpdatedTime).
-*path(X, X, Category, [], _):- spot(X, _, _, _, Category), printTotal.
-*/
-
-
 visit(Destination, Weight, TimeSpent, CurrentTime, UpdatedWithVisitTime):- spot(Destination, OpeningTime, ClosingTime, TimeSpent, _),
  UpdatedWithJourneyTime is CurrentTime + Weight, UpdatedWithJourneyTime >= OpeningTime, UpdatedWithJourneyTime =< ClosingTime,
  UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, UpdatedWithVisitTime =< 18.
 
-
+/**
+* traverse the graph
+*/
 path(X, Y, Categories, [Z|Ys], CurrentTime, Vertices, Length):- edge(X, Z, Weight), spot(Z, _, _, TimeSpent, Category), member(Category, Categories),\+ member(Z,Vertices), 
  visit(Z, Weight, TimeSpent, CurrentTime, UpdatedTime), path(Z, Y, Categories, Ys, UpdatedTime, [Z|Vertices], Length).
 path(X, _, Categories, [], _, Vertices, Length):- spot(X, _, _, _, Category), member(Category, Categories), list_length(Vertices, Length), insertToSolution(Length, Vertices).
 
-printPath([Source, Destination|Vertices], Length, CurrentTime):- edge(Source, Destination, Weight), spot(Destination, OpeningTime, ClosingTime, TimeSpent, _), UpdatedWithJourneyTime is CurrentTime + Weight,
+
+/**
+* print the route of the solutions
+*/
+printPath([Source, Destination|Vertices], Length, CurrentTime):- edge(Source, Destination, Weight), spot(Destination, _, _, TimeSpent, _), UpdatedWithJourneyTime is CurrentTime + Weight,
  ampm(CurrentTime, ConvertedCurrentTime, MeridiemStatus), ampm(UpdatedWithJourneyTime, ConvertedUpdatedWithJourneyTime, MeridiemStatus2),
  UpdatedWithVisitTime is UpdatedWithJourneyTime + TimeSpent, write(ConvertedCurrentTime), write(MeridiemStatus), write(' - '),  write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),
  write(': Journey to Vacation Spot '), write(Destination), nl, ampm(UpdatedWithVisitTime, ConvertedUpdatedWithVisitTime, MeridiemStatus3),
  write(ConvertedUpdatedWithJourneyTime), write(MeridiemStatus2),write(' - '), write(ConvertedUpdatedWithVisitTime), write(MeridiemStatus3),
  write(': Vacation Spot '), write(Destination), nl, !, printPath([Destination|Vertices], Length, UpdatedWithVisitTime).
-printPath([Destination|[]], Length, CurrentTime):- write('Total: '), write(Length).
+printPath([_|[]], Length, _):- write('Total: '), write(Length),nl,nl.
 
-printPathHelper([H,T|_]):- printPath([home|T], H, 8).
+printPathHelper([], _).
+printPathHelper([H|T], CurrentTime):- tupleBreaker(H, Length, Vertices), printPath([home|Vertices], Length, CurrentTime), printPathHelper(T, CurrentTime).
 
-insertToSolution(Length, Vertices):- currentSolution(CurrentHighest, CurrentHighestVertices), CurrentHighest =< Length, assert(currentSolution(Length, Vertices)).
+tupleBreaker([Length,Vertices|_], Length, Vertices).
+
+insertToSolution(Length, Vertices):- currentSolution(CurrentHighest, _), CurrentHighest =< Length, assert(currentSolution(Length, Vertices)).
 insertToSolution(Length, Vertices):- \+ currentSolution(_, _), assert(currentSolution(Length, Vertices)).
 
 list_length([], 0).
-list_length([H|T], Length):-  list_length(T, Length2), Length is 1 + Length2.
+list_length([_|T], Length):-  list_length(T, Length2), Length is 1 + Length2.
 
 %starting the program with predicate go/0
 go :- retractall(currentSolution(_,_)), write('Input: '), nl, write('Category:'), read(Category), string_lower(Category, CategoryToLower),
- atomic_list_concat(Categories,',', CategoryToLower), findall([Length,SPOT], path(home, _, Categories, SPOT, 8, [], Length), [H|T]), currentSolution(Length, Vertices), write(H), nl, printPathHelper(H).
+ atomic_list_concat(Categories,',', CategoryToLower), findall([Length,SPOT], path(home, _, Categories, SPOT, 8, [], Length), ListOfSolutions), printPathHelper(ListOfSolutions, 8).
